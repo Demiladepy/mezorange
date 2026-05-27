@@ -1,0 +1,20 @@
+{
+  "name": "mezrange-keeper",
+  "version": "0.1.0",
+  "description": "Off-chain keeper bot for MezrangeVault on Mezo Testnet",
+  "private": true,
+  "scripts": {
+    "start": "tsx bot.ts",
+    "dev": "tsx watch bot.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
