@@ -8,11 +8,17 @@ import { ethers } from "hardhat";
  * Optional overrides via .env:
  *   NPM_ADDRESS, SWAP_ROUTER_ADDRESS, POOL_ADDRESS, DEPLOY_DIRECT_VAULT=true
  */
+/** Official Mezo Testnet Slipstream (CL) addresses — https://mezo.org/docs/developers/features/mezo-pools/ */
+const MEZO_TESTNET_SLIPSTREAM = {
+  clFactory: "0x7B61BC8Aa460476d142F1CD107A47297002f69ff",
+  nonfungiblePositionManager: "0x9B753e11bFEd0D88F6e1D2777E3c7dac42F96062",
+  swapRouter: "0x3112908bB72ce9c26a321Eeb22EC8e051F3b6E6a",
+};
+
 const MEZO_TESTNET_UNISWAP = {
-  // TODO: replace with deployed NonfungiblePositionManager on Mezo Testnet
-  nonfungiblePositionManager: process.env.NPM_ADDRESS ?? "0x0000000000000000000000000000000000000001",
-  // TODO: replace with deployed SwapRouter on Mezo Testnet
-  swapRouter: process.env.SWAP_ROUTER_ADDRESS ?? "0x0000000000000000000000000000000000000002",
+  nonfungiblePositionManager:
+    process.env.NPM_ADDRESS ?? MEZO_TESTNET_SLIPSTREAM.nonfungiblePositionManager,
+  swapRouter: process.env.SWAP_ROUTER_ADDRESS ?? MEZO_TESTNET_SLIPSTREAM.swapRouter,
 };
 
 const POOL_FEE = 3000;
@@ -25,6 +31,11 @@ async function main() {
   const network = await ethers.provider.getNetwork();
 
   console.log("Network:", network.name, `(chainId ${network.chainId})`);
+  if (!deployer) {
+    throw new Error(
+      "No deployer account available. Set PRIVATE_KEY in .env for --network mezoTestnet (or use Hardhat local network).",
+    );
+  }
   console.log("Deployer:", deployer.address);
   console.log(
     "Balance:",
@@ -57,10 +68,16 @@ async function main() {
   );
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
+  const factoryDeployReceipt = await factory.deploymentTransaction()?.wait();
 
   console.log("MezrangeVaultFactory:", factoryAddress);
-  console.log("  NPM (placeholder):", MEZO_TESTNET_UNISWAP.nonfungiblePositionManager);
-  console.log("  SwapRouter (placeholder):", MEZO_TESTNET_UNISWAP.swapRouter);
+  console.log("  CL Factory (Slipstream):", MEZO_TESTNET_SLIPSTREAM.clFactory);
+  console.log("  NPM:", MEZO_TESTNET_UNISWAP.nonfungiblePositionManager);
+  console.log("  SwapRouter:", MEZO_TESTNET_UNISWAP.swapRouter);
+  if (factoryDeployReceipt) {
+    console.log("  Deploy tx:", factoryDeployReceipt.hash);
+    console.log("  Start block:", factoryDeployReceipt.blockNumber);
+  }
 
   let vaultAddress = ethers.ZeroAddress;
 
@@ -84,10 +101,15 @@ async function main() {
     );
     await vault.waitForDeployment();
     vaultAddress = await vault.getAddress();
+    const vaultDeployReceipt = await vault.deploymentTransaction()?.wait();
 
     await (await vault.setKeeper(deployer.address)).wait();
 
     console.log("MezrangeVault (direct):", vaultAddress);
+    if (vaultDeployReceipt) {
+      console.log("  Deploy tx:", vaultDeployReceipt.hash);
+      console.log("  Start block:", vaultDeployReceipt.blockNumber);
+    }
     console.log("  Keeper:", deployer.address);
   } else {
     console.log("\nCreating vault via factory...");
@@ -107,6 +129,9 @@ async function main() {
 
     console.log("MezrangeVault (via factory):", vaultAddress);
     console.log("  Tx:", receipt?.hash);
+    if (receipt) {
+      console.log("  Start block:", receipt.blockNumber);
+    }
     console.log("  Keeper:", deployer.address);
   }
 

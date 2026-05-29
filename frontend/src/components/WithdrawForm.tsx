@@ -10,12 +10,14 @@ import {
 import { parseUnits } from "viem";
 import { mezrangeVaultAbi } from "@/lib/abis";
 import { formatTokenAmount } from "@/lib/format";
+import { cn } from "@/lib/cn";
 
 type WithdrawFormProps = {
   vaultAddress: `0x${string}`;
+  embedded?: boolean;
 };
 
-export function WithdrawForm({ vaultAddress }: WithdrawFormProps) {
+export function WithdrawForm({ vaultAddress, embedded }: WithdrawFormProps) {
   const { address } = useAccount();
   const [shares, setShares] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -66,29 +68,33 @@ export function WithdrawForm({ vaultAddress }: WithdrawFormProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
-      <h3 className="text-lg font-semibold text-zinc-50">Withdraw</h3>
-      <p className="mt-1 text-sm text-zinc-400">
-        Redeem vault shares for both underlying tokens.
-      </p>
+    <div className={cn(!embedded && "rounded-xl border border-white/5 bg-glass p-6 backdrop-blur-xl")}>
+      {!embedded && (
+        <>
+          <h3 className="font-heading text-lg font-semibold text-text-primary">Withdraw</h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            Redeem vault shares for both underlying tokens.
+          </p>
+        </>
+      )}
 
-      <p className="mt-3 text-sm text-zinc-500">
+      <p className={cn("text-sm text-text-muted", !embedded && "mt-3")}>
         Balance:{" "}
-        <span className="font-medium text-zinc-200">
+        <span className="font-medium text-text-primary">
           {formatTokenAmount(userShares as bigint | undefined, Number(decimals ?? 18))}{" "}
           {(symbol as string) ?? "shares"}
         </span>
       </p>
 
       <label className="mt-4 block text-sm">
-        <span className="text-zinc-400">Shares to redeem</span>
+        <span className="text-text-muted">Shares to redeem</span>
         <input
           type="number"
           min="0"
           step="any"
           value={shares}
           onChange={(e) => setShares(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-orange-500"
+          className="mz-input mt-1"
           placeholder="0.0"
         />
       </label>
@@ -105,7 +111,7 @@ export function WithdrawForm({ vaultAddress }: WithdrawFormProps) {
               ),
             )
           }
-          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500"
+          className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-text-secondary transition hover:border-btc-orange/40"
         >
           Max
         </button>
@@ -115,12 +121,12 @@ export function WithdrawForm({ vaultAddress }: WithdrawFormProps) {
         type="button"
         disabled={!address || waiting || !shares}
         onClick={handleWithdraw}
-        className="mt-4 w-full rounded-lg border border-zinc-600 px-4 py-2.5 text-sm font-semibold text-zinc-100 transition hover:border-orange-500 hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mz-btn-secondary mt-4"
       >
         {waiting ? "Processing…" : "Withdraw"}
       </button>
 
-      {status && <p className="mt-3 text-xs text-zinc-400">{status}</p>}
+      {status && <p className="mt-3 text-xs text-text-muted">{status}</p>}
     </div>
   );
 }

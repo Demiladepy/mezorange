@@ -140,6 +140,13 @@ export const mezrangeVaultAbi = [
   },
   {
     type: "function",
+    name: "rangeWidth",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+  {
+    type: "function",
     name: "positionTokenId",
     stateMutability: "view",
     inputs: [],

@@ -37,21 +37,24 @@ export function VaultCard({ address }: VaultCardProps) {
   return (
     <Link
       href={`/vault/${address}`}
-      className="group block rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 transition hover:border-orange-500/50 hover:bg-zinc-900"
+      className="group relative block overflow-hidden rounded-2xl border border-[color:var(--mz-border)] bg-[color:var(--mz-surface)] p-6 shadow-[var(--mz-shadow)] transition hover:-translate-y-0.5 hover:border-[color:color-mix(in_oklch,var(--mz-accent)_45%,var(--mz-border))] hover:bg-[color:color-mix(in_oklch,var(--mz-surface)_92%,transparent)]"
     >
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100 mz-grid" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-zinc-50 group-hover:text-orange-400">
+          <h3 className="text-lg font-semibold text-[color:var(--mz-text)] transition group-hover:text-[color:var(--mz-accent)]">
             {(name as string) ?? "Mezrange Vault"}
           </h3>
-          <p className="mt-1 font-mono text-xs text-zinc-500">{address}</p>
+          <p className="mt-1 font-mono text-xs text-[color:var(--mz-dim)]">
+            {address}
+          </p>
         </div>
         {needsRebalance ? (
-          <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-400">
+          <span className="mz-chip rounded-full px-2.5 py-1 text-xs font-medium text-[color:var(--mz-warn)]">
             Rebalance due
           </span>
         ) : (
-          <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400">
+          <span className="mz-chip rounded-full px-2.5 py-1 text-xs font-medium text-[color:var(--mz-ok)]">
             In range
           </span>
         )}
@@ -59,18 +62,23 @@ export function VaultCard({ address }: VaultCardProps) {
 
       <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <dt className="text-zinc-500">Share token</dt>
-          <dd className="mt-1 font-medium text-zinc-200">
+          <dt className="text-[color:var(--mz-dim)]">Share token</dt>
+          <dd className="mt-1 font-medium text-[color:var(--mz-text)]">
             {(symbol as string) ?? "—"}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">TVL (token0)</dt>
-          <dd className="mt-1 font-medium text-zinc-200">
+          <dt className="text-[color:var(--mz-dim)]">TVL (token0)</dt>
+          <dd className="mt-1 font-medium text-[color:var(--mz-text)]">
             {formatTokenAmount(totalAssets as bigint | undefined)}
           </dd>
         </div>
       </dl>
+
+      <div className="mt-6 flex items-center justify-between text-xs text-[color:var(--mz-dim)]">
+        <span className="mz-chip rounded-full px-2.5 py-1">View vault</span>
+        <span className="font-mono">→</span>
+      </div>
     </Link>
   );
 }

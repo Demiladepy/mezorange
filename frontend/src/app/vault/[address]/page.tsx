@@ -1,44 +1,36 @@
 "use client";
 
+import { isAddress } from "viem";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useAccount, useContractRead } from "wagmi";
-import { isAddress } from "viem";
+import { useAccount } from "wagmi";
 import { ConnectPrompt } from "@/components/ConnectPrompt";
-import { DepositForm } from "@/components/DepositForm";
-import { WithdrawForm } from "@/components/WithdrawForm";
-import { VaultMetrics } from "@/components/VaultMetrics";
-import { RangeChart } from "@/components/RangeChart";
-import { RebalanceHistory } from "@/components/RebalanceHistory";
-import { mezrangeVaultAbi } from "@/lib/abis";
+import { MaintenanceBanner } from "@/components/vault/MaintenanceBanner";
+import { VaultHero } from "@/components/vault/VaultHero";
+import { PriceVisualizer } from "@/components/vault/PriceVisualizer";
+import { RebalanceTimeline } from "@/components/vault/RebalanceTimeline";
+import { ActionPanel } from "@/components/vault/ActionPanel";
+import { PerformanceCharts } from "@/components/vault/PerformanceCharts";
+import { KeeperRebalance } from "@/components/vault/KeeperRebalance";
 import { useClientReady, PageLoader } from "@/hooks/useClientReady";
 
 export default function VaultPage() {
   const ready = useClientReady();
   const params = useParams<{ address: string }>();
-  const rawAddress = params.address;
-  const vaultAddress = isAddress(rawAddress ?? "")
-    ? (rawAddress as `0x${string}`)
+  const vaultAddress = isAddress(params.address ?? "")
+    ? (params.address as `0x${string}`)
     : undefined;
-
   const { isConnected } = useAccount();
 
-  const { data: name } = useContractRead({
-    address: vaultAddress,
-    abi: mezrangeVaultAbi,
-    functionName: "name",
-    query: { enabled: Boolean(vaultAddress && ready) },
-  });
-
   if (!ready) {
-    return <PageLoader />;
+    return <PageLoader label="Loading vault…" />;
   }
 
   if (!vaultAddress) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <p className="text-red-400">Invalid vault address.</p>
-        <Link href="/" className="mt-4 inline-block text-orange-400 hover:underline">
+      <div className="mx-auto max-w-7xl px-4 py-16 text-center">
+        <p className="text-danger">Invalid vault address.</p>
+        <Link href="/" className="mt-4 inline-block text-btc-orange hover:underline">
           Back to dashboard
         </Link>
       </div>
@@ -46,30 +38,27 @@ export default function VaultPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="mb-8">
-        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-300">
-          ← Dashboard
-        </Link>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-50">
-          {(name as string) ?? "Vault"}
-        </h1>
-        <p className="mt-2 font-mono text-sm text-zinc-500">{vaultAddress}</p>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 pb-20 pt-6 sm:px-6 md:pb-10">
+      <MaintenanceBanner vaultAddress={vaultAddress} />
+      <VaultHero vaultAddress={vaultAddress} />
 
       {!isConnected ? (
-        <ConnectPrompt message="Connect your wallet to deposit, withdraw, and view live vault metrics." />
+        <div className="mt-10">
+          <ConnectPrompt message="Connect your wallet to deposit, withdraw, and command this vault." />
+        </div>
       ) : (
-        <div className="space-y-8">
-          <VaultMetrics vaultAddress={vaultAddress} />
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <DepositForm vaultAddress={vaultAddress} />
-            <WithdrawForm vaultAddress={vaultAddress} />
+        <div className="mt-10 space-y-8">
+          <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+            <div className="space-y-8">
+              <PriceVisualizer vaultAddress={vaultAddress} />
+              <RebalanceTimeline vaultAddress={vaultAddress} />
+            </div>
+            <div className="space-y-6">
+              <ActionPanel vaultAddress={vaultAddress} />
+              <KeeperRebalance vaultAddress={vaultAddress} />
+            </div>
           </div>
-
-          <RangeChart vaultAddress={vaultAddress} />
-          <RebalanceHistory vaultAddress={vaultAddress} />
+          <PerformanceCharts vaultAddress={vaultAddress} />
         </div>
       )}
     </div>

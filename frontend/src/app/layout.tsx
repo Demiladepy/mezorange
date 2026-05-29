@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
-import { ClientShell } from "@/components/ClientShell";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
+
 export const metadata: Metadata = {
-  title: "Mezrange Pro Vault",
-  description: "Concentrated liquidity vault dashboard on Mezo Testnet",
+  title: "Mezrange Pro | Mezo DeFi",
+  description:
+    "Automated concentrated liquidity vaults on Mezo Testnet — deposit, visualize ranges, and earn yield.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -13,9 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-zinc-950 font-sans text-zinc-100">
-        <ClientShell>{children}</ClientShell>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full font-body">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

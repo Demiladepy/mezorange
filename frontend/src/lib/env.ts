@@ -11,3 +11,9 @@ export const defaultVaultAddress = process.env.NEXT_PUBLIC_VAULT_ADDRESS as
 
 export const mezoTestnetRpc =
   process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC ?? "https://rpc.test.mezo.org";
+
+export const goldskyGraphqlUrl =
+  process.env.NEXT_PUBLIC_GOLDSKY_GRAPHQL_URL ??
+  // Back-compat if you copied the Goldsky var name directly.
+  process.env.NEXT_PUBLIC_PUBLIC_GRAPHQL_LINK ??
+  undefined;
