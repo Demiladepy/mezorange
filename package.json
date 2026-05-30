@@ -1,7 +1,7 @@
 {
-  "name": "mezrange-pro-vault",
+  "name": "mezorange-lp",
   "version": "0.1.0",
-  "description": "Hardhat project for the Mezrange Pro vault on Mezo Testnet",
+  "description": "Mezorange LP — concentrated liquidity vault on Mezo Testnet",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
@@ -9,6 +9,9 @@
     "clean": "hardhat clean",
     "deploy": "hardhat run scripts/deploy.ts",
     "deploy:mezo": "hardhat run scripts/deploy.ts --network mezoTestnet",
+    "create-pool:mezo": "hardhat run scripts/create-pool.ts --network mezoTestnet",
+    "goldsky:deploy": "goldsky subgraph deploy mezorange-mezo-testnet/1.0.0 --from-abi goldsky/mezorange-vault.config.json --start-block 13378088",
+    "goldsky:verify": "node scripts/verify-goldsky-vault.cjs",
     "mint:tokens": "hardhat run scripts/mintTokens.ts"
   },
   "keywords": [

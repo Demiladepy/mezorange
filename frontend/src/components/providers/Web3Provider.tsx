@@ -4,11 +4,8 @@ import { useMemo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import {
-  getConfig,
-  getDefaultWallets,
-  mezoTestnet,
-} from "@mezo-org/passport";
+import { getConfig, getDefaultWallets } from "@mezo-org/passport/dist/src/config";
+import { mezoTestnet } from "@mezo-org/orangekit";
 import { walletConnectProjectId } from "@/lib/env";
 import { NetworkProvider, useNetwork } from "@/context/NetworkContext";
 
@@ -20,7 +17,7 @@ function Web3ProvidersInner({ children }: { children: ReactNode }) {
   const config = useMemo(
     () =>
       getConfig({
-        appName: "Mezrange Pro Vault",
+        appName: "Mezorange LP",
         appDescription: "Concentrated liquidity vault dashboard on Mezo",
         mezoNetwork: network === "mainnet" ? "mainnet" : "testnet",
         walletConnectProjectId,

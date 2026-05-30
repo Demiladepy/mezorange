@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "name": "mezorange-vault",
+  "description": "MezrangeVault at 0x520a8466 — BTC/MUSD CL vault on Mezo testnet",
+  "abis": {
+    "MezrangeVault": {
+      "path": "./MezrangeVault.abi.json"
+    }
+  },
+  "instances": [
+    {
+      "abi": "MezrangeVault",
+      "address": "0x520a8466d4616c9d8b3f23B98fD4f8AA50500D8B",
+      "startBlock": 13378088,
+      "chain": "mezo-testnet"
+    }
+  ]
+}

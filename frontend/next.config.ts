@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@mezo-org/orangekit",
     "@mezo-org/orangekit-smart-account",
     "@mezo-org/orangekit-contracts",
+    "@mezo-org/mezo-clay",
   ],
   webpack: (config) => {
     config.resolve.alias = {

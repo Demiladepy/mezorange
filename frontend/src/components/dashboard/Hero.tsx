@@ -1,54 +1,47 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { PulseGlow } from "@/components/ui/PulseGlow";
-import { prefersReducedMotion } from "@/lib/motion";
-
-const subtitle = "Automated Liquidity. Continuous Yield.";
+import { Panel, StatCell } from "@/components/ui/Panel";
+import { defaultPoolAddress, defaultVaultAddress } from "@/lib/env";
+import { shortenAddress } from "@/lib/format";
 
 export function Hero() {
-  const [typed, setTyped] = useState("");
-  const reduced = prefersReducedMotion();
-
-  useEffect(() => {
-    if (reduced) {
-      const t = window.setTimeout(() => setTyped(subtitle), 0);
-      return () => clearTimeout(t);
-    }
-    let i = 0;
-    const id = setInterval(() => {
-      i += 1;
-      setTyped(subtitle.slice(0, i));
-      if (i >= subtitle.length) clearInterval(id);
-    }, 35);
-    return () => clearInterval(id);
-  }, [reduced]);
-
   return (
-    <section className="relative overflow-hidden py-16 md:py-24">
-      <PulseGlow className="left-1/2 top-0 -translate-x-1/2" size="lg" />
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative text-center"
-      >
-        <p className="font-heading text-xs uppercase tracking-[0.25em] text-text-muted">
-          Mezo Testnet · Chain 31611
-        </p>
-        <h1 className="mt-4 font-heading text-display font-bold">
-          <span className="animate-gradient-shift bg-gradient-accent bg-[length:200%_auto] bg-clip-text text-transparent">
-            Mezrange Pro
-          </span>
-        </h1>
-        <p className="mt-4 min-h-[1.5rem] font-body text-lg text-text-secondary md:text-xl">
-          {typed}
-          {!reduced && typed.length < subtitle.length && (
-            <span className="animate-pulse text-btc-orange">|</span>
-          )}
-        </p>
-      </motion.div>
-    </section>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="font-heading text-[11px] uppercase tracking-[0.2em] text-hl-teal">
+            Mezo Testnet · Slipstream CL
+          </p>
+          <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-hl-text md:text-4xl">
+            Mezorange LP
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-hl-muted">
+            Automated concentrated-liquidity vault for BTC/MUSD on Mezo&apos;s CL DEX. Deposit,
+            monitor range position, and rebalance when price drifts.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hl-badge hl-badge-live">Live</span>
+          <span className="hl-badge">Chain 31611</span>
+        </div>
+      </div>
+
+      <Panel padding="none" className="overflow-hidden">
+        <div className="grid grid-cols-1 divide-y divide-hl-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+          <StatCell
+            label="Vault"
+            value={defaultVaultAddress ? shortenAddress(defaultVaultAddress, 4) : "—"}
+            sub="MezrangeVault"
+          />
+          <StatCell
+            label="Pool"
+            value={defaultPoolAddress ? shortenAddress(defaultPoolAddress, 4) : "—"}
+            sub="BTC/MUSD · ts 200"
+          />
+          <StatCell label="Indexer" value="Goldsky" sub="Subgraph · mezorange/1.0.0" accent="teal" />
+          <StatCell label="Mode" value="Manual" sub="Keeper auto-rebalance in v0.2" accent="orange" />
+        </div>
+      </Panel>
+    </div>
   );
 }

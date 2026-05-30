@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.24;
 
-/// @title Minimal SwapRouter interface for MezrangeVault.
+/// @title Minimal Slipstream CLSwapRouter interface for MezrangeVault.
 interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;
-        uint24 fee;
+        int24 tickSpacing;
         address recipient;
         uint256 deadline;
         uint256 amountIn;

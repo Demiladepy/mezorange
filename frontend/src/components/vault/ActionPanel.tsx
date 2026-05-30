@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useWalletAccount } from "@mezo-org/passport";
+import { useWalletAccount } from "@mezo-org/passport/dist/src/hooks/useWalletAccount";
 import { useAccount, useContractRead } from "wagmi";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DepositForm } from "@/components/DepositForm";

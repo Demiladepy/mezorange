@@ -1,7 +1,7 @@
 {
-  "name": "mezrange-keeper",
+  "name": "mezorange-lp-keeper",
   "version": "0.1.0",
-  "description": "Off-chain keeper bot for MezrangeVault on Mezo Testnet",
+  "description": "Off-chain keeper bot for Mezorange LP vault on Mezo Testnet",
   "private": true,
   "scripts": {
     "start": "tsx bot.ts",

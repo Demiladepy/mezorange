@@ -14,9 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mezrange Pro | Mezo DeFi",
+  title: "Mezorange LP | Mezo DeFi",
   description:
-    "Automated concentrated liquidity vaults on Mezo Testnet — deposit, visualize ranges, and earn yield.",
+    "Mezorange LP — automated concentrated liquidity on Mezo Testnet. Deposit, visualize ranges, and earn yield.",
   icons: {
     icon: "/favicon.svg",
   },

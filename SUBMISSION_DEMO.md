@@ -17,7 +17,7 @@ Have two wallets ready:
 ## 1) Intro (10–15s)
 
 - Open the app dashboard (`/`)
-- Explain: “This is Mezrange — an ERC‑4626 vault that runs a Uniswap V3 position and rebalances automatically on Mezo Testnet.”
+- Explain: “This is **Mezorange LP** — an ERC‑4626 vault that runs a concentrated liquidity position and rebalances automatically on Mezo Testnet.”
 
 ## 2) Show wallet connectivity (30–45s)
 

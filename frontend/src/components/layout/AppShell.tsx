@@ -24,11 +24,15 @@ const Navbar = dynamic(
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <Web3Providers>
-      <div className="relative flex min-h-screen flex-col">
-        <MezoBackground />
+      <div className="relative flex min-h-screen flex-col hl-grid-bg">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.18]">
+          <MezoBackground />
+        </div>
         <Navbar />
-        <PageTransition>{children}</PageTransition>
-        <Footer />
+        <div className="relative z-10 flex flex-1 flex-col">
+          <PageTransition>{children}</PageTransition>
+          <Footer />
+        </div>
         <MobileNav />
       </div>
     </Web3Providers>

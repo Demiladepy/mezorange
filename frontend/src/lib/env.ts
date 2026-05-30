@@ -9,6 +9,10 @@ export const defaultVaultAddress = process.env.NEXT_PUBLIC_VAULT_ADDRESS as
   | `0x${string}`
   | undefined;
 
+export const defaultPoolAddress = process.env.NEXT_PUBLIC_POOL_ADDRESS as
+  | `0x${string}`
+  | undefined;
+
 export const mezoTestnetRpc =
   process.env.NEXT_PUBLIC_MEZO_TESTNET_RPC ?? "https://rpc.test.mezo.org";
 

@@ -7,7 +7,7 @@ import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
 /// @title MezrangeVaultFactory
-/// @notice Deploys {MezrangeVault} instances for arbitrary token pairs and Uniswap V3 fee tiers.
+/// @notice Deploys {MezrangeVault} instances for arbitrary token pairs and Slipstream tick spacings.
 contract MezrangeVaultFactory {
     /// @dev Uniswap V3 NonfungiblePositionManager shared by all vaults from this factory.
     INonfungiblePositionManager public immutable positionManager;
@@ -22,14 +22,14 @@ contract MezrangeVaultFactory {
     /// @param vault Address of the new vault.
     /// @param token0 Lower-sorted pool token0.
     /// @param token1 Lower-sorted pool token1.
-    /// @param poolFee Uniswap V3 fee tier.
-    /// @param pool Uniswap V3 pool used by the vault.
+    /// @param tickSpacing Slipstream pool tick spacing.
+    /// @param pool Slipstream CL pool used by the vault.
     /// @param creator Address that initiated deployment (receives vault ownership).
     event VaultCreated(
         address indexed vault,
         address indexed token0,
         address indexed token1,
-        uint24 poolFee,
+        int24 tickSpacing,
         address pool,
         address creator
     );
@@ -47,11 +47,11 @@ contract MezrangeVaultFactory {
         swapRouter = swapRouter_;
     }
 
-    /// @notice Deploy a new vault for a token pair and fee tier.
+    /// @notice Deploy a new vault for a token pair and tick spacing.
     /// @param tokenA First token of the pair (sorted internally).
     /// @param tokenB Second token of the pair (sorted internally).
-    /// @param poolFee Uniswap V3 fee tier (e.g. 3000).
-    /// @param pool Initialized Uniswap V3 pool for the pair and fee tier.
+    /// @param tickSpacing Slipstream pool tick spacing (e.g. 200).
+    /// @param pool Initialized Slipstream CL pool for the pair and tick spacing.
     /// @param rangeWidth Initial concentrated-liquidity range preset.
     /// @param name ERC-20 share token name.
     /// @param symbol ERC-20 share token symbol.
@@ -60,7 +60,7 @@ contract MezrangeVaultFactory {
     function createVault(
         address tokenA,
         address tokenB,
-        uint24 poolFee,
+        int24 tickSpacing,
         IUniswapV3Pool pool,
         MezrangeVault.RangeWidth rangeWidth,
         string calldata name,
@@ -74,7 +74,7 @@ contract MezrangeVaultFactory {
         MezrangeVault newVault = new MezrangeVault(
             tokenA,
             tokenB,
-            poolFee,
+            tickSpacing,
             positionManager,
             swapRouter,
             pool,
@@ -93,7 +93,7 @@ contract MezrangeVaultFactory {
             vault,
             tokenA < tokenB ? tokenA : tokenB,
             tokenA < tokenB ? tokenB : tokenA,
-            poolFee,
+            tickSpacing,
             address(pool),
             msg.sender
         );

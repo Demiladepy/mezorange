@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 /// @title Minimal NonfungiblePositionManager interface for MezrangeVault.
-/// @dev Subset of Uniswap V3 periphery INonfungiblePositionManager (avoids legacy OpenZeppelin imports).
+/// @dev Velodrome Slipstream CL periphery (tickSpacing-based pool keys, not Uniswap fee tiers).
 interface INonfungiblePositionManager {
     struct MintParams {
         address token0;
         address token1;
-        uint24 fee;
+        int24 tickSpacing;
         int24 tickLower;
         int24 tickUpper;
         uint256 amount0Desired;
@@ -52,7 +52,7 @@ interface INonfungiblePositionManager {
             address operator,
             address token0,
             address token1,
-            uint24 fee,
+            int24 tickSpacing,
             int24 tickLower,
             int24 tickUpper,
             uint128 liquidity,

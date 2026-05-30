@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Mezrange Pro Vault — Testnet deploy helper
+# Mezorange LP — Testnet deploy helper
 #
 # This script is intended for bash environments (macOS/Linux/WSL/Git Bash).
 # On Windows PowerShell, run via WSL or Git Bash:

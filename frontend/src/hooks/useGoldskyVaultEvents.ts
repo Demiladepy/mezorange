@@ -31,12 +31,12 @@ export function useGoldskyRebalances(vaultAddress?: `0x${string}`) {
     enabled,
     queryFn: async () => {
       const query = `
-        query($contract: String!) {
+        query($contracts: [String!]!) {
           rebalanceds(
             first: 200,
             orderBy: block_number,
             orderDirection: desc,
-            where: { contractId_: $contract }
+            where: { contractId__in: $contracts }
           ) {
             id
             block_number
@@ -51,7 +51,7 @@ export function useGoldskyRebalances(vaultAddress?: `0x${string}`) {
       `;
 
       const data = await goldskyQuery<{ rebalanceds: GoldskyRebalanced[] }>(query, {
-        contract: vaultAddress!.toLowerCase(),
+        contracts: [vaultAddress!.toLowerCase()],
       });
       return data.rebalanceds;
     },
@@ -67,12 +67,12 @@ export function useGoldskyFeesCompounded(vaultAddress?: `0x${string}`) {
     enabled,
     queryFn: async () => {
       const query = `
-        query($contract: String!) {
+        query($contracts: [String!]!) {
           feesCompoundeds(
             first: 200,
             orderBy: block_number,
             orderDirection: desc,
-            where: { contractId_: $contract }
+            where: { contractId__in: $contracts }
           ) {
             id
             block_number
@@ -86,7 +86,7 @@ export function useGoldskyFeesCompounded(vaultAddress?: `0x${string}`) {
 
       const data = await goldskyQuery<{ feesCompoundeds: GoldskyFeesCompounded[] }>(
         query,
-        { contract: vaultAddress!.toLowerCase() },
+        { contracts: [vaultAddress!.toLowerCase()] },
       );
       return data.feesCompoundeds;
     },

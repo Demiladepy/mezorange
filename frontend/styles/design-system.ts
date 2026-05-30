@@ -1,5 +1,5 @@
 /**
- * Mezrange Pro — Mezo brand design tokens
+ * Mezorange LP — Mezo brand design tokens
  */
 
 export const colors = {

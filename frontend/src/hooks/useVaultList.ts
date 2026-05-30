@@ -16,13 +16,15 @@ export function useVaultAddresses(ready = true) {
   });
 
   const addresses = useMemo(() => {
-    if (allVaults && (allVaults as `0x${string}`[]).length > 0) {
-      return allVaults as `0x${string}`[];
-    }
+    const fromFactory = (allVaults as `0x${string}`[] | undefined) ?? [];
+    const merged = new Map<string, `0x${string}`>();
     if (defaultVaultAddress) {
-      return [defaultVaultAddress];
+      merged.set(defaultVaultAddress.toLowerCase(), defaultVaultAddress);
     }
-    return [] as `0x${string}`[];
+    for (const addr of fromFactory) {
+      merged.set(addr.toLowerCase(), addr);
+    }
+    return Array.from(merged.values());
   }, [allVaults]);
 
   return {

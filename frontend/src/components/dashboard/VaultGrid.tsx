@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { VaultCardPremium } from "@/components/dashboard/VaultCardPremium";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { Panel } from "@/components/ui/Panel";
 import { VaultCardSkeleton } from "@/components/ui/Skeleton";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 
@@ -13,29 +13,22 @@ type VaultGridProps = {
 
 function EmptyVaults() {
   return (
-    <GlassCard className="mx-auto max-w-md text-center">
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center motion-safe:animate-spin-slow">
-        <div
-          className="h-14 w-14 rotate-45 border border-btc-orange/40 bg-gradient-to-br from-btc-orange/20 to-transparent"
-          style={{ transformStyle: "preserve-3d" }}
-        />
-      </div>
-      <h3 className="font-heading text-xl font-semibold text-text-primary">No Vaults Yet</h3>
-      <p className="mt-2 text-sm text-text-secondary">
-        Deploy a vault via the factory or set{" "}
-        <code className="text-btc-orange">NEXT_PUBLIC_VAULT_ADDRESS</code> to explore
-        concentrated liquidity strategies on Mezo.
+    <Panel className="mx-auto max-w-md text-center">
+      <h3 className="font-heading text-sm font-semibold text-hl-text">No vault configured</h3>
+      <p className="mt-2 text-sm text-hl-muted">
+        Set <code className="text-hl-teal">NEXT_PUBLIC_VAULT_ADDRESS</code> in{" "}
+        <code className="text-hl-muted">frontend/.env.local</code> to point at your deployed
+        MezrangeVault.
       </p>
-      <p className="mt-6 text-2xl text-btc-orange motion-safe:animate-pulse">+</p>
-    </GlassCard>
+    </Panel>
   );
 }
 
 export function VaultGrid({ addresses, isLoading }: VaultGridProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
           <VaultCardSkeleton key={i} />
         ))}
       </div>
@@ -48,7 +41,7 @@ export function VaultGrid({ addresses, isLoading }: VaultGridProps) {
 
   return (
     <motion.div
-      className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+      className="grid gap-4 md:grid-cols-2"
       variants={staggerContainer}
       initial="initial"
       animate="animate"

@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { useContractRead } from "wagmi";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CountUp } from "@/components/ui/CountUp";
 import { erc20Abi, mezrangeVaultAbi, uniswapV3PoolAbi } from "@/lib/abis";
 import { formatTokenAmount } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -13,8 +12,6 @@ import { cn } from "@/lib/cn";
 type VaultCardPremiumProps = {
   address: `0x${string}`;
 };
-
-const RANGE_WIDTH_LABELS = ["Tight", "Medium", "Wide"];
 
 export function VaultCardPremium({ address }: VaultCardPremiumProps) {
   const { data: name } = useContractRead({
@@ -90,8 +87,6 @@ export function VaultCardPremium({ address }: VaultCardPremiumProps) {
     }));
   }, [tickLower, tickUpper, slot0]);
 
-  const apyEstimate = 12.4;
-
   const s0 = (symbol0 as string) ?? "T0";
   const s1 = (symbol1 as string) ?? "T1";
 
@@ -99,58 +94,48 @@ export function VaultCardPremium({ address }: VaultCardPremiumProps) {
     <Link href={`/vault/${address}`} className="block">
       <GlassCard variant="hoverable" className="h-full">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-14">
-              <span className="absolute left-0 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-gradient-accent text-xs font-bold text-obsidian">
-                {s0.slice(0, 3)}
-              </span>
-              <span className="absolute left-6 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate text-xs font-bold text-text-primary">
-                {s1.slice(0, 3)}
-              </span>
-            </div>
-            <div>
-              <h3 className="font-heading text-sm font-semibold text-text-primary">
-                {(name as string) ?? "Vault"}
-              </h3>
-              <p className="font-mono text-[10px] text-text-muted">
-                {address.slice(0, 6)}…{address.slice(-4)}
-              </p>
-            </div>
+          <div>
+            <h3 className="font-heading text-sm font-semibold text-hl-text">
+              {(name as string) ?? "Vault"}
+            </h3>
+            <p className="mt-0.5 font-mono text-[10px] text-hl-muted">
+              {s0}/{s1} · {address.slice(0, 6)}…{address.slice(-4)}
+            </p>
           </div>
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+              "rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide",
               needsRebalance
-                ? "bg-warning/15 text-warning shadow-glow-warning"
-                : "bg-success/15 text-success shadow-glow-success",
+                ? "border border-warning/40 bg-warning/10 text-warning"
+                : "border border-hl-teal/35 bg-hl-teal/10 text-hl-teal",
             )}
           >
-            {needsRebalance ? "Rebalance" : "Active"}
+            {needsRebalance ? "Rebalance" : "In range"}
           </span>
         </div>
 
-        <div className="mt-6 flex items-end justify-between">
+        <div className="mt-5 flex items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-text-muted">Est. APY</p>
-            <p className="font-heading text-3xl font-bold text-btc-orange">
-              <CountUp value={apyEstimate} decimals={1} suffix="%" />
+            <p className="text-[10px] uppercase tracking-[0.12em] text-hl-muted">TVL</p>
+            <p className="font-heading text-2xl font-semibold tabular-nums text-hl-teal">
+              {formatTokenAmount(totalAssets as bigint | undefined)}
             </p>
           </div>
-          <div className="h-12 w-24">
+          <div className="h-10 w-20 opacity-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkData}>
                 <defs>
                   <linearGradient id={`spark-${address}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F7931A" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="#F7931A" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#50D2C1" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="#50D2C1" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <Area
                   type="monotone"
                   dataKey="v"
-                  stroke="#F7931A"
+                  stroke="#50D2C1"
                   fill={`url(#spark-${address})`}
-                  strokeWidth={1.5}
+                  strokeWidth={1.25}
                   dot={false}
                 />
               </AreaChart>
@@ -158,10 +143,11 @@ export function VaultCardPremium({ address }: VaultCardPremiumProps) {
           </div>
         </div>
 
-        <div className="mt-4 flex justify-between border-t border-white/5 pt-4 text-xs text-text-secondary">
-          <span>TVL {formatTokenAmount(totalAssets as bigint | undefined)}</span>
-          <span>{RANGE_WIDTH_LABELS[0]}</span>
-        </div>
+        {slot0 && tickLower !== undefined && tickUpper !== undefined && (
+          <p className="mt-3 border-t border-hl-border pt-3 font-mono text-[10px] text-hl-muted">
+            tick {Number(slot0[1])} · range [{Number(tickLower)}, {Number(tickUpper)}]
+          </p>
+        )}
       </GlassCard>
     </Link>
   );

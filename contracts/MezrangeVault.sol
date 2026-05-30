@@ -21,7 +21,7 @@ import {FullMath} from "./libraries/FullMath.sol";
 import {FixedPoint96} from "./libraries/FixedPoint96.sol";
 
 /// @title MezrangeVault
-/// @notice ERC-4626 vault that manages a single Uniswap V3 concentrated liquidity position for a token pair.
+/// @notice ERC-4626 vault that manages a single Velodrome Slipstream CL position for a token pair.
 /// @dev Deposits require equal-value amounts of token0 and token1. Shares represent pro-rata ownership of the
 ///      position plus idle balances. A keeper may call {rebalance} when {needsRebalance} is true.
 contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Receiver {
@@ -35,23 +35,20 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
         WIDE
     }
 
-    /// @dev Uniswap V3 position manager (Mezo address supplied at deployment).
+    /// @dev Slipstream NonfungiblePositionManager (Mezo address supplied at deployment).
     INonfungiblePositionManager public immutable positionManager;
 
-    /// @dev Swap router used during rebalances to reach the mint ratio.
+    /// @dev Slipstream CLSwapRouter used during rebalances to reach the mint ratio.
     ISwapRouter public immutable swapRouter;
 
-    /// @dev Target Uniswap V3 pool for the pair and fee tier.
+    /// @dev Target Slipstream CL pool for the pair and tick spacing.
     IUniswapV3Pool public immutable pool;
 
     /// @dev Sorted pool tokens (token0 < token1).
     IERC20 public immutable token0;
     IERC20 public immutable token1;
 
-    /// @dev Pool fee in hundredths of a bip (e.g. 3000 = 0.30%).
-    uint24 public immutable poolFee;
-
-    /// @dev Pool tick spacing; position ticks must align to this.
+    /// @dev Pool tick spacing (Slipstream pool key); position ticks must align to this.
     int24 public immutable tickSpacing;
 
     /// @dev Basis-point denominator (10_000 = 100%).
@@ -117,17 +114,17 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
 
     /// @param tokenA_ First token of the pair (sorted internally).
     /// @param tokenB_ Second token of the pair (sorted internally).
-    /// @param poolFee_ Uniswap V3 fee tier (e.g. 3000).
-    /// @param positionManager_ Uniswap V3 NonfungiblePositionManager on Mezo (constructor param if not documented).
-    /// @param swapRouter_ Uniswap V3 SwapRouter for rebalance swaps.
-    /// @param pool_ Initialized Uniswap V3 pool for the pair and fee tier.
+    /// @param tickSpacing_ Slipstream pool tick spacing (e.g. 200 for BTC/MUSD volatile).
+    /// @param positionManager_ Slipstream NonfungiblePositionManager on Mezo.
+    /// @param swapRouter_ Slipstream CLSwapRouter for rebalance swaps.
+    /// @param pool_ Initialized Slipstream CL pool for the pair and tick spacing.
     /// @param rangeWidth_ Initial tick range preset.
     /// @param name_ ERC-20 share token name.
     /// @param symbol_ ERC-20 share token symbol.
     constructor(
         address tokenA_,
         address tokenB_,
-        uint24 poolFee_,
+        int24 tickSpacing_,
         INonfungiblePositionManager positionManager_,
         ISwapRouter swapRouter_,
         IUniswapV3Pool pool_,
@@ -145,7 +142,7 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
         address t0 = tokenA_ < tokenB_ ? tokenA_ : tokenB_;
         address t1 = tokenA_ < tokenB_ ? tokenB_ : tokenA_;
 
-        if (pool_.token0() != t0 || pool_.token1() != t1 || pool_.fee() != poolFee_) {
+        if (pool_.token0() != t0 || pool_.token1() != t1 || pool_.tickSpacing() != tickSpacing_) {
             revert InvalidTokenOrder();
         }
 
@@ -154,16 +151,23 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
         pool = pool_;
         token0 = IERC20(t0);
         token1 = IERC20(t1);
-        poolFee = poolFee_;
-        tickSpacing = pool_.tickSpacing();
+        tickSpacing = tickSpacing_;
         rangeWidth = rangeWidth_;
         rebalanceThresholdBps = DEFAULT_REBALANCE_THRESHOLD_BPS;
         keeper = msg.sender;
 
-        token0.forceApprove(address(positionManager), type(uint256).max);
-        token1.forceApprove(address(positionManager), type(uint256).max);
-        token0.forceApprove(address(swapRouter), type(uint256).max);
-        token1.forceApprove(address(swapRouter), type(uint256).max);
+        // Approvals deferred to deposit/rebalance — Mezo native BTC (0x7670…) lacks ERC20 approve.
+    }
+
+    /// @dev Set max allowance when the token supports ERC20 approve (native BTC may not).
+    function _ensureMaxAllowance(IERC20 token, address spender) internal {
+        if (token.allowance(address(this), spender) == type(uint256).max) return;
+        try token.approve(spender, type(uint256).max) returns (bool success) {
+            if (!success) {
+                try token.approve(spender, 0) returns (bool) {} catch {}
+                try token.approve(spender, type(uint256).max) {} catch {}
+            }
+        } catch {}
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -481,11 +485,14 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
         uint256 amount0Desired = token0.balanceOf(address(this));
         uint256 amount1Desired = token1.balanceOf(address(this));
 
+        _ensureMaxAllowance(token0, address(positionManager));
+        _ensureMaxAllowance(token1, address(positionManager));
+
         (tokenId, liquidity, amount0, amount1) = positionManager.mint(
             INonfungiblePositionManager.MintParams({
                 token0: address(token0),
                 token1: address(token1),
-                fee: poolFee,
+                tickSpacing: tickSpacing,
                 tickLower: lower,
                 tickUpper: upper,
                 amount0Desired: amount0Desired,
@@ -582,6 +589,8 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
             return;
         }
 
+        _ensureMaxAllowance(IERC20(tokenIn), address(swapRouter));
+
         uint256 amountOutMinimum = 0;
         if (rebalanceSwapSlippageBps > 0) {
             (uint160 sqrtPriceX96, ) = _currentSqrtPrice();
@@ -596,7 +605,7 @@ contract MezrangeVault is ERC4626, Ownable, ReentrancyGuard, Pausable, IERC721Re
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: tokenIn,
                 tokenOut: tokenOut,
-                fee: poolFee,
+                tickSpacing: tickSpacing,
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,

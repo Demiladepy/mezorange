@@ -1,50 +1,157 @@
-# Mezrange Pro Vault (Mezo Testnet)
+# Mezrange Vault
 
-An ERC‑4626 vault that manages a **single Uniswap V3 concentrated liquidity position** and an off‑chain keeper that rebalances when the position drifts out of range on **Mezo Testnet (chainId 31611)**.
+One-line description: **Automated LP rebalancing vault for Mezo's CL DEX.**
 
-This repository contains:
-- **Smart contracts** (`contracts/`): `MezrangeVault` + `MezrangeVaultFactory`
-- **Keeper bot** (`keeper/`): monitors pool + triggers `rebalance()` when profitable/safe
-- **Frontend** (`frontend/`): dashboard + vault page (Passport / RainbowKit / wagmi)
+**Live demo:** _Deploy to Vercel and add link here_
 
-## Architecture (text diagram)
+**Track:** LP Rebalancing Vault bounty (Mezo Hackathon 2026)
+
+> **Security:** Never commit `.env`, `.env.local`, or private keys. Rotate any key that was ever exposed.
+
+## What's in v0.1
+
+| Component | Address | Notes |
+|-----------|---------|-------|
+| **BTC/MUSD CL pool** | [`0xB34cAF03F2a326B3b7eBaCeed6295a39Be8D7139`](https://explorer.test.mezo.org/address/0xB34cAF03F2a326B3b7eBaCeed6295a39Be8D7139) | Created block **13377993**, tickSpacing **200** |
+| **MezrangeVault (live)** | [`0x520a8466d4616c9d8b3f23B98fD4f8AA50500D8B`](https://explorer.test.mezo.org/address/0x520a8466d4616c9d8b3f23B98fD4f8AA50500D8B) | Direct deploy, block **13378088** |
+| **MezrangeVaultFactory** | [`0x073580C5F37158F563B17983af142dc874c018aa`](https://explorer.test.mezo.org/address/0x073580C5F37158F563B17983af142dc874c018aa) | Deployed; v0.1 vault uses direct deploy (factory `createVault` hits Mezo gas cap) |
+| **Goldsky subgraph** | `mezorange-mezo-testnet/1.0.0` | Vault `0x520a…` from block **13378088** |
+
+- **MezrangeVault contract:** Slipstream-compatible (`tickSpacing`, not `fee`) — see `contracts/interfaces/INonfungiblePositionManager.sol` and `ISwapRouter.sol`
+- **Frontend:** Hyperliquid-inspired dashboard, vault detail page, deposit/withdraw UI, Goldsky activity feed, range visualizer
+- **Keeper bot:** gas-aware rebalance monitoring (manual `rebalance()` from UI in v0.1)
+
+## Why this scope
+
+Three honest decisions:
+
+1. **Direct vault deploy instead of factory.** Mezo testnet enforces a ~3M gas cap per tx; `factory.createVault` exceeds it. v0.1 ships a live vault via direct deploy (`scripts/deploy.ts`, `DEPLOY_DIRECT_VAULT=true` by default). Factory bytecode is ready for a future network upgrade or batched deploy pattern.
+
+2. **Slipstream over Uniswap V3.** Mezo's CL system uses `tickSpacing` parameters, not `fee`. The vault was adapted to match — documented in `contracts/interfaces/INonfungiblePositionManager.sol`.
+
+3. **Manual rebalance only.** Keeper bot integration belongs in v0.2 once we can verify rebalance logic against sustained live pool activity. Automating untested rebalance is how funds get drained.
+
+**Known limitation:** Mezo native BTC (`0x7670…`) does not support standard ERC-20 `approve`. Dual-token deposits may require Mezo-specific handling until token interfaces stabilize.
+
+## What v0.2 looks like
+
+- Chainlink Automation / Gelato keeper for auto-rebalance
+- Performance fee logic + collection
+- Position dashboard with IL tracking
+- Factory deploy path once gas limits allow or via CREATE2 proxy pattern
+
+## Maintenance commitment
+
+6 months minimum post-deployment. Available via Discord/X handle _(add yours)_.
+
+## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────────────────────┐
-│                               Frontend (Next.js)                           │
-│   - RainbowKit + wagmi + Passport                                           │
-│   - Reads vault + pool state, charts range vs price                         │
-│   - Sends tx: approve → depositDual / redeemDual                            │
-│   - (keeper only) manual rebalance()                                        │
-└───────────────┬────────────────────────────────────────────────────────────┘
-                │ JSON-RPC (Mezo Testnet)
-                ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│                         MezrangeVault (ERC-4626)                            │
-│  - Holds token0/token1 + 1 Uniswap V3 position NFT                          │
-│  - depositDual / redeemDual (two-token flows)                               │
-│  - needsRebalance() gate + keeper-only rebalance()                          │
-│  - pause/unpause for emergency maintenance                                  │
-└───────────────┬────────────────────────────────────────────────────────────┘
-                │ interacts
-                ▼
-┌──────────────────────────────┐     ┌──────────────────────────────────────┐
-│ Uniswap V3 Pool (slot0 tick) │<--->│  NonfungiblePositionManager (NFT)     │
-└──────────────────────────────┘     └──────────────────────────────────────┘
-                 \
-                  \  (during rebalance)
-                   ▼
-             ┌──────────────────┐
-             │   SwapRouter      │
-             └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Frontend (Next.js + RainbowKit)                       │
+│  Dashboard · vault detail · deposit/withdraw · Goldsky activity feed    │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ JSON-RPC (Mezo Testnet, chain 31611)
+                                ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MezrangeVault (ERC-4626)                              │
+│  depositDual / redeemDual · needsRebalance() · keeper rebalance()        │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+  Slipstream CL Pool    NonfungiblePositionManager   CLSwapRouter
+  (BTC/MUSD ts=200)
 
-┌───────────────────────────────────────────────────────────────────────────┐
-│                               Keeper Bot (Node)                             │
-│  - Watches blocks / pool swaps                                               │
-│  - Calls needsRebalance()                                                    │
-│  - If safe/profitable: sends rebalance() with gas estimate + buffer          │
-│  - Retries transient failures with backoff                                   │
-└───────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Goldsky subgraph — indexes Deposited, Withdrawn, Rebalanced, Fees…     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Keeper bot (Node) — gas-aware needsRebalance() watcher (v0.2 auto)     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+See also the [intelligent rebalancing](#intelligent-rebalancing-decision-gas-aware-threshold) section below for keeper policy details.
+
+## Tech
+
+Solidity 0.8.18 · Hardhat · Slipstream-compatible interfaces · ERC-4626 vault · Goldsky subgraph · Next.js + RainbowKit frontend on Vercel.
+
+## Repo layout
+
+- `contracts/` — `MezrangeVault`, `MezrangeVaultFactory`, Slipstream interfaces
+- `scripts/` — `create-pool.ts`, `deploy.ts`, Goldsky introspection helper
+- `keeper/` — off-chain rebalance bot
+- `frontend/` — Next.js App Router UI (dashboard + `/vault/[address]`)
+- `test/` — Hardhat contract tests
+
+---
+
+## Quickstart
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+- A funded Mezo Testnet EOA
+- WalletConnect project ID (for RainbowKit)
+
+### Install & test
+
+```bash
+npm install
+cp .env.example .env
+npm test
+```
+
+### Deploy pool + vault (Mezo testnet)
+
+Edit root `.env`:
+
+- `PRIVATE_KEY` — testnet key (never commit)
+- `TESTNET_RPC` — default `https://rpc.test.mezo.org`
+
+Create the BTC/MUSD pool (once):
+
+```bash
+npm run create-pool:mezo
+```
+
+Deploy the vault against that pool:
+
+```bash
+npm run deploy:mezo
+```
+
+Copy deploy output into `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_VAULT_ADDRESS=0x520a8466d4616c9d8b3f23B98fD4f8AA50500D8B
+NEXT_PUBLIC_POOL_ADDRESS=0xB34cAF03F2a326B3b7eBaCeed6295a39Be8D7139
+NEXT_PUBLIC_GOLDSKY_GRAPHQL_URL=https://api.goldsky.com/api/public/project_cmp2yui5905ct01we90crcu19/subgraphs/mezorange-mezo-testnet/1.0.0/gn
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
+```
+
+### Run frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Run keeper (optional)
+
+```bash
+cd keeper
+npm install
+cp .env.example .env
+# set VAULT_ADDRESS, POOL_ADDRESS, KEEPER_PRIVATE_KEY
+npm run start
 ```
 
 ## Intelligent rebalancing decision (gas-aware threshold)
@@ -52,161 +159,45 @@ This repository contains:
 The system separates **on-chain “should rebalance?”** from **off-chain “should we pay gas now?”**:
 
 ### On-chain: `needsRebalance()`
-`MezrangeVault.needsRebalance()` returns true when the price (tick) is:
-- **out of range**, or
-- **within a warning margin** near the lower/upper bound (threshold is `rebalanceThresholdBps` of range width).
 
-This is a deterministic safety signal and does **not** consider gas cost or profitability.
+`MezrangeVault.needsRebalance()` returns true when the price (tick) is out of range, or within a warning margin near the lower/upper bound (`rebalanceThresholdBps` of range width).
 
-### Off-chain: keeper “gas-aware” decision
-The keeper bot:
-- Checks `needsRebalance()`
-- Estimates gas for `rebalance()`
-- Applies a **gas-aware policy** before sending the tx (example policy):
-  - skip if gas estimate is above a configured ceiling
-  - skip if expected incremental fees / risk reduction is not worth current gas
-  - wait for better conditions (lower gas / stabilized price)
+### Off-chain: keeper gas-aware decision
 
-### Slippage / adverse conditions protections
-Inside `rebalance()` and supporting helpers:
-- **Swap size is capped** (`_capSwapInput`) to avoid draining pool depth during rebalances.
-- Optional **slippage bound** via `rebalanceSwapSlippageBps` to protect against bad fills.
-- If slippage constraints fail or price moves mid‑tx, the rebalance reverts; the keeper retries later.
+The keeper checks `needsRebalance()`, estimates gas for `rebalance()`, and skips when gas cost exceeds expected benefit.
 
-## Quickstart
+### Protections
 
-### Prerequisites
-- Node.js 18+
-- npm
-- A funded Mezo Testnet EOA for deployment/keeper
-- (Recommended) WSL or Git Bash if you want to run `deploy.sh` on Windows
-
-### Install root dependencies
-
-```bash
-npm install
-cp .env.example .env
-```
-
-## Local development
-
-### 1) Run smart contract tests
-
-```bash
-npm test
-```
-
-### 2) Deploy to Mezo Testnet
-
-Edit `.env`:
-- `PRIVATE_KEY` (testnet key)
-- `TESTNET_RPC` (default: `https://rpc.test.mezo.org`)
-
-Then:
-
-```bash
-npm run deploy:mezo
-```
-
-Notes:
-- `scripts/deploy.ts` currently uses **placeholder** Uniswap periphery addresses unless you set:
-  - `NPM_ADDRESS`
-  - `SWAP_ROUTER_ADDRESS`
-  - `POOL_ADDRESS`
-- If `POOL_ADDRESS` is not set, the script deploys factory + mock tokens and **skips vault creation**.
-
-### 3) Start the keeper bot
-
-```bash
-cd keeper
-npm install
-cp .env.example .env
-```
-
-Set in `keeper/.env`:
-- `KEEPER_PRIVATE_KEY`
-- `TESTNET_RPC`
-- `VAULT_ADDRESS`
-- (optional) `POOL_ADDRESS`
-
-Run:
-
-```bash
-npm run start
-```
-
-### 4) Run the frontend
-
-```bash
-cd frontend
-npm install
-cp .env.example .env.local
-```
-
-Set in `frontend/.env.local`:
-- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
-- `NEXT_PUBLIC_FACTORY_ADDRESS` and/or `NEXT_PUBLIC_VAULT_ADDRESS`
-
-Run:
-
-```bash
-npm run dev
-```
+- Swap size capped during rebalances
+- Optional slippage bound via `rebalanceSwapSlippageBps`
+- `pause()` for emergency maintenance
 
 ## Edge cases & operational behavior
 
-### Extreme volatility (price whipsaw)
-- **Symptom**: price crosses in/out of range rapidly; rebalancing too often can churn gas and fees.
-- **Mitigation**:
-  - keeper uses gas-aware logic (wait for stabilization, enforce minimum delay between rebalances)
-  - prefer wider ranges (`RangeWidth`) during high vol
-  - slippage caps prevent huge swaps when market is unstable
+### Extreme volatility
 
-### Low liquidity pools → high slippage
-- **Symptom**: swap needed to rebalance causes large price impact or cannot meet `amountOutMinimum`.
-- **Mitigation**:
-  - `_capSwapInput` limits swap input size during rebalances
-  - `rebalanceSwapSlippageBps` can be tightened/relaxed
-  - keeper detects repeated slippage failures and backs off / alerts
+Keeper uses gas-aware logic and prefers wider ranges during high vol.
 
-### Gas spikes make rebalance unprofitable
-- **Symptom**: `needsRebalance()` true but gas cost > expected benefit.
-- **Mitigation**:
-  - keeper estimates gas and skips until gas normalizes
-  - manual “Rebalance” remains available for keeper if urgent
+### Low liquidity → slippage
 
-### Failed rebalance due to slippage check
-- **Symptom**: `rebalance()` reverts mid-call due to slippage bound / adverse movement.
-- **Behavior**:
-  - state remains unchanged (atomic revert)
-  - keeper records failure and retries with backoff (or after new price/tick update)
+`_capSwapInput` limits swap size; keeper backs off on repeated slippage failures.
 
-### Emergency pause (maintenance mode)
-- **Symptom**: owner calls `pause()` to stop deposits/withdrawals/rebalances.
-- **Behavior**:
-  - vault methods guarded by `whenNotPaused` revert
-  - frontend shows a **Maintenance Mode** banner
-  - keeper will not be able to rebalance until unpaused
+### Gas spikes
 
-### Keeper retry strategy
-- Categorizes errors:
-  - **revert** (e.g. `RebalanceNotNeeded`, slippage) → wait for state change, retry later
-  - **RPC / network** issues → exponential backoff
-  - **insufficient funds / nonce** issues → requires operator action
+Keeper skips until gas normalizes; manual rebalance remains available.
+
+### Emergency pause
+
+Owner `pause()` stops deposits/withdrawals/rebalances; frontend shows a maintenance banner.
 
 ## Maintenance commitment (6 months)
 
-For 6 months after submission:
-- **Bug fixes**: functional defects, keeper reliability issues, frontend breakages
-- **Updates**: dependency updates for security/compatibility as needed
-- **Support**: questions and troubleshooting via Discord (share invite in submission / README header if required)
+For 6 months after submission: bug fixes, dependency security updates, and support via Discord _(add invite)_.
 
-## Automation: one-shot testnet deploy/build
-
-Use the included script:
+## One-shot deploy script
 
 ```bash
 ./deploy.sh
 ```
 
-See `deploy.sh` header for required env vars and Windows notes (WSL/Git Bash).
+See `deploy.sh` for env vars and Windows notes (WSL/Git Bash).
