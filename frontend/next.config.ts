@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  // Monorepo: trace from repo root when Root Directory = frontend on Vercel
-  outputFileTracingRoot: path.join(__dirname, ".."),
   transpilePackages: [
     "@mezo-org/passport",
     "@mezo-org/orangekit",
