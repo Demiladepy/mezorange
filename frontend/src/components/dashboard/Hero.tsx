@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { Panel, StatCell } from "@/components/ui/Panel";
+import { AddressChip } from "@/components/ui/AddressChip";
 import { defaultPoolAddress, defaultVaultAddress } from "@/lib/env";
-import { shortenAddress } from "@/lib/format";
+import { GOLDSKY_SUBGRAPH_LABEL } from "@/lib/links";
 
 export function Hero() {
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-heading text-[11px] uppercase tracking-[0.2em] text-hl-teal">
             Mezo Testnet · Slipstream CL
@@ -20,9 +22,17 @@ export function Hero() {
             monitor range position, and rebalance when price drifts.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="hl-badge hl-badge-live">Live</span>
           <span className="hl-badge">Chain 31611</span>
+          {defaultVaultAddress && (
+            <Link
+              href={`/vault/${defaultVaultAddress}`}
+              className="hl-badge border-hl-teal/40 bg-hl-teal/10 text-hl-teal transition hover:bg-hl-teal/20"
+            >
+              View live vault →
+            </Link>
+          )}
         </div>
       </div>
 
@@ -30,15 +40,32 @@ export function Hero() {
         <div className="grid grid-cols-1 divide-y divide-hl-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           <StatCell
             label="Vault"
-            value={defaultVaultAddress ? shortenAddress(defaultVaultAddress, 4) : "—"}
+            value={
+              defaultVaultAddress ? (
+                <AddressChip address={defaultVaultAddress} />
+              ) : (
+                "—"
+              )
+            }
             sub="MezrangeVault"
           />
           <StatCell
             label="Pool"
-            value={defaultPoolAddress ? shortenAddress(defaultPoolAddress, 4) : "—"}
+            value={
+              defaultPoolAddress ? (
+                <AddressChip address={defaultPoolAddress} />
+              ) : (
+                "—"
+              )
+            }
             sub="BTC/MUSD · ts 200"
           />
-          <StatCell label="Indexer" value="Goldsky" sub="Subgraph · mezorange/1.0.0" accent="teal" />
+          <StatCell
+            label="Indexer"
+            value="Goldsky"
+            sub={`Subgraph · ${GOLDSKY_SUBGRAPH_LABEL}`}
+            accent="teal"
+          />
           <StatCell label="Mode" value="Manual" sub="Keeper auto-rebalance in v0.2" accent="orange" />
         </div>
       </Panel>

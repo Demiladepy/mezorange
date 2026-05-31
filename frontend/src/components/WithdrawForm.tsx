@@ -8,6 +8,7 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { parseUnits } from "viem";
+import { Toast } from "@/components/ui/Toast";
 import { mezrangeVaultAbi } from "@/lib/abis";
 import { formatTokenAmount } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -21,6 +22,7 @@ export function WithdrawForm({ vaultAddress, embedded }: WithdrawFormProps) {
   const { address } = useAccount();
   const [shares, setShares] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [toast, setToast] = useState<"loading" | "success" | null>(null);
 
   const { data: decimals } = useContractRead({
     address: vaultAddress,
@@ -43,12 +45,16 @@ export function WithdrawForm({ vaultAddress, embedded }: WithdrawFormProps) {
   });
 
   const { writeContractAsync: redeem, data: redeemHash } = useContractWrite();
-  const { isLoading: waiting } = useWaitForTransactionReceipt({ hash: redeemHash });
+  const { isLoading: waiting, isSuccess: withdrawSuccess } = useWaitForTransactionReceipt({
+    hash: redeemHash,
+  });
+  const toastSucceeded = toast === "loading" && withdrawSuccess;
 
   async function handleWithdraw() {
     if (!address || !decimals) return;
 
     try {
+      setToast("loading");
       setStatus("Withdrawing…");
       const parsedShares = parseUnits(shares || "0", Number(decimals));
 
@@ -63,11 +69,19 @@ export function WithdrawForm({ vaultAddress, embedded }: WithdrawFormProps) {
       setShares("");
       refetchBalance();
     } catch (error) {
+      setToast(null);
       setStatus(error instanceof Error ? error.message : "Withdraw failed.");
     }
   }
 
   return (
+    <>
+    <Toast
+      open={toast !== null}
+      variant={toastSucceeded ? "success" : "loading"}
+      message={toastSucceeded ? "Withdrawal confirmed" : "Processing withdrawal…"}
+      onClose={() => setToast(null)}
+    />
     <div className={cn(!embedded && "rounded-xl border border-white/5 bg-glass p-6 backdrop-blur-xl")}>
       {!embedded && (
         <>
@@ -128,5 +142,6 @@ export function WithdrawForm({ vaultAddress, embedded }: WithdrawFormProps) {
 
       {status && <p className="mt-3 text-xs text-text-muted">{status}</p>}
     </div>
+    </>
   );
 }

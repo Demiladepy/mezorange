@@ -2,13 +2,9 @@
 
 import { useMemo, useState } from "react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,17 +21,8 @@ type PerformanceChartsProps = {
   vaultAddress: `0x${string}`;
 };
 
-const CHART_TABS = ["APY Over Time", "Fee Earnings", "Impermanent Loss"] as const;
+const CHART_TABS = ["Fee Events", "APY", "Impermanent Loss"] as const;
 type ChartTab = (typeof CHART_TABS)[number];
-
-function buildMockSeries(days: number, base: number, variance: number) {
-  return Array.from({ length: days }, (_, i) => ({
-    day: `D${i + 1}`,
-    value: base + Math.sin(i * 0.5) * variance + i * (variance / days),
-    hodl: base + i * (variance / days) * 0.9,
-    lp: base + Math.sin(i * 0.4) * variance * 0.8 + i * (variance / days) * 1.05,
-  }));
-}
 
 const tooltipStyle = {
   contentStyle: {
@@ -48,7 +35,7 @@ const tooltipStyle = {
 };
 
 export function PerformanceCharts({ vaultAddress }: PerformanceChartsProps) {
-  const [tab, setTab] = useState<ChartTab>("APY Over Time");
+  const [tab, setTab] = useState<ChartTab>("Fee Events");
   const goldskyFees = useGoldskyFeesCompounded(vaultAddress);
 
   const { data: feeLogs } = useContractEvent({
@@ -59,7 +46,6 @@ export function PerformanceCharts({ vaultAddress }: PerformanceChartsProps) {
     enabled: !goldskyGraphqlUrl,
   });
 
-  const apyData = useMemo(() => buildMockSeries(14, 8, 4), []);
   const feeData = useMemo(() => {
     if (goldskyGraphqlUrl && goldskyFees.data?.length) {
       return [...goldskyFees.data]
@@ -79,13 +65,11 @@ export function PerformanceCharts({ vaultAddress }: PerformanceChartsProps) {
         };
       });
     }
-    return buildMockSeries(14, 0.02, 0.05).map((d) => ({
-      day: d.day,
-      fees: d.value / 100,
-    }));
+    return [];
   }, [feeLogs, goldskyFees.data]);
 
-  const ilData = useMemo(() => buildMockSeries(14, 100, 5), []);
+  const hasFeeData = feeData.length > 0;
+  const comingSoon = tab !== "Fee Events";
 
   return (
     <GlassCard>
@@ -100,39 +84,29 @@ export function PerformanceCharts({ vaultAddress }: PerformanceChartsProps) {
               tab === t
                 ? "bg-white/10 text-btc-orange"
                 : "text-text-muted hover:text-text-primary",
+              t !== "Fee Events" && "opacity-70",
             )}
           >
             {t}
+            {t !== "Fee Events" && (
+              <span className="ml-1 text-[9px] text-text-muted">v0.2</span>
+            )}
           </button>
         ))}
       </div>
 
-      <div className="mt-6 h-64">
-        {tab === "APY Over Time" && (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={apyData}>
-              <defs>
-                <linearGradient id="apyFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F7931A" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#F7931A" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fill: "#6B6B75", fontSize: 10 }} />
-              <YAxis tick={{ fill: "#6B6B75", fontSize: 10 }} />
-              <Tooltip {...tooltipStyle} />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#F7931A"
-                fill="url(#apyFill)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-
-        {tab === "Fee Earnings" && (
+      <div className="mt-6 flex h-64 items-center justify-center">
+        {comingSoon ? (
+          <div className="text-center">
+            <p className="font-heading text-sm font-semibold text-text-primary">
+              {tab} — coming in v0.2
+            </p>
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-text-muted">
+              Requires sustained vault activity and extended subgraph indexing. Fee events
+              below use real on-chain data where available.
+            </p>
+          </div>
+        ) : hasFeeData ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={feeData}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
@@ -142,25 +116,21 @@ export function PerformanceCharts({ vaultAddress }: PerformanceChartsProps) {
               <Bar dataKey="fees" fill="#F7931A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        )}
-
-        {tab === "Impermanent Loss" && (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={ilData}>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fill: "#6B6B75", fontSize: 10 }} />
-              <YAxis tick={{ fill: "#6B6B75", fontSize: 10 }} />
-              <Tooltip {...tooltipStyle} />
-              <Line type="monotone" dataKey="hodl" stroke="#9B9BA3" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="lp" stroke="#F7931A" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+        ) : (
+          <div className="text-center">
+            <p className="font-heading text-sm font-semibold text-text-primary">
+              No fee events yet
+            </p>
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-text-muted">
+              FeesCompounded events will appear here after the vault earns and compounds CL
+              fees. Range and rebalance data is live above.
+            </p>
+          </div>
         )}
       </div>
 
       <p className="mt-2 text-[10px] text-text-muted">
-        Historical charts use on-chain fee events where available; APY and IL series are
-        illustrative until indexed subgraph data is connected.
+        Fee chart uses indexed Goldsky events or direct RPC logs — no synthetic data.
       </p>
     </GlassCard>
   );

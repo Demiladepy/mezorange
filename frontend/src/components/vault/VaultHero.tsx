@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useContractRead } from "wagmi";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CountUp } from "@/components/ui/CountUp";
+import { AddressChip } from "@/components/ui/AddressChip";
 import { PulseGlow } from "@/components/ui/PulseGlow";
-import { erc20Abi, mezrangeVaultAbi } from "@/lib/abis";
+import { erc20Abi, mezrangeVaultAbi, uniswapV3PoolAbi } from "@/lib/abis";
 import { formatTokenAmount } from "@/lib/format";
+import { cn } from "@/lib/cn";
+
 type VaultHeroProps = {
   vaultAddress: `0x${string}`;
 };
@@ -54,15 +56,63 @@ export function VaultHero({ vaultAddress }: VaultHeroProps) {
     abi: mezrangeVaultAbi,
     functionName: "paused",
   });
+  const { data: tickLower } = useContractRead({
+    address: vaultAddress,
+    abi: mezrangeVaultAbi,
+    functionName: "tickLower",
+  });
+  const { data: tickUpper } = useContractRead({
+    address: vaultAddress,
+    abi: mezrangeVaultAbi,
+    functionName: "tickUpper",
+  });
+  const { data: pool } = useContractRead({
+    address: vaultAddress,
+    abi: mezrangeVaultAbi,
+    functionName: "pool",
+  });
+  const { data: slot0 } = useContractRead({
+    address: pool as `0x${string}` | undefined,
+    abi: uniswapV3PoolAbi,
+    functionName: "slot0",
+    query: { enabled: Boolean(pool) },
+  });
 
   const s0 = (symbol0 as string) ?? "T0";
   const s1 = (symbol1 as string) ?? "T1";
-  const tvl = Number(totalAssets ?? BigInt(0)) / 1e18;
+  const currentTick = slot0 ? Number(slot0[1]) : null;
+  const inRange =
+    currentTick !== null &&
+    tickLower !== undefined &&
+    tickUpper !== undefined &&
+    currentTick >= Number(tickLower) &&
+    currentTick <= Number(tickUpper);
 
-  const metrics = [
-    { label: "TVL", value: tvl, format: (v: number) => formatTokenAmount(BigInt(Math.floor(v * 1e18))) },
-    { label: "24h Fees", value: 0.12, format: (v: number) => `${v.toFixed(3)}` },
-    { label: "Est. APY", value: 12.4, format: (v: number) => `${v.toFixed(1)}%` },
+  const metrics: Array<{
+    label: string;
+    value: string;
+    sub?: string;
+    accent?: "success" | "warning" | "neutral";
+  }> = [
+    {
+      label: "TVL",
+      value: formatTokenAmount(totalAssets as bigint | undefined),
+      sub: "totalAssets · on-chain",
+    },
+    {
+      label: "Range status",
+      value: needsRebalance ? "Rebalance due" : inRange ? "In range" : "—",
+      sub:
+        currentTick !== null && tickLower !== undefined && tickUpper !== undefined
+          ? `tick ${currentTick} · [${Number(tickLower)}, ${Number(tickUpper)}]`
+          : "Loading pool tick…",
+      accent: needsRebalance ? "warning" : inRange ? "success" : "neutral",
+    },
+    {
+      label: "Fees (indexed)",
+      value: "—",
+      sub: "Populates after first FeesCompounded event",
+    },
   ];
 
   return (
@@ -99,14 +149,14 @@ export function VaultHero({ vaultAddress }: VaultHeroProps) {
                 Active
               </span>
             )}
-            {paused && (
-              <span className="text-xs text-warning">Paused</span>
-            )}
+            {paused && <span className="text-xs text-warning">Paused</span>}
             {needsRebalance && (
               <span className="text-xs text-warning">Needs rebalance</span>
             )}
           </div>
-          <p className="mt-2 font-mono text-xs text-text-muted">{vaultAddress}</p>
+          <div className="mt-2">
+            <AddressChip address={vaultAddress} chars={6} />
+          </div>
         </div>
       </div>
 
@@ -114,13 +164,18 @@ export function VaultHero({ vaultAddress }: VaultHeroProps) {
         {metrics.map((m) => (
           <GlassCard key={m.label} className="py-4">
             <p className="text-[10px] uppercase tracking-wider text-text-muted">{m.label}</p>
-            <p className="mt-2 font-heading text-xl font-bold text-text-primary">
-              {m.label === "TVL" ? (
-                m.format(m.value)
-              ) : (
-                <CountUp value={m.value} decimals={m.label === "Est. APY" ? 1 : 2} suffix={m.label === "Est. APY" ? "%" : ""} />
+            <p
+              className={cn(
+                "mt-2 font-heading text-xl font-bold text-text-primary",
+                m.accent === "success" && "text-success",
+                m.accent === "warning" && "text-warning",
               )}
+            >
+              {m.value}
             </p>
+            {"sub" in m && m.sub && (
+              <p className="mt-1 text-[10px] leading-relaxed text-text-muted">{m.sub}</p>
+            )}
           </GlassCard>
         ))}
       </div>

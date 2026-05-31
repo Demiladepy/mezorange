@@ -2,7 +2,7 @@
 
 One-line description: **Automated LP rebalancing vault for Mezo's CL DEX.**
 
-**Live demo:** _Deploy to Vercel and add link here_
+**Live demo:** [mezorange-lp.vercel.app](https://mezorange-lp.vercel.app)
 
 **Track:** LP Rebalancing Vault bounty (Mezo Hackathon 2026)
 

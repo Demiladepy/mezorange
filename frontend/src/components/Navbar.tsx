@@ -5,6 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { MezoWordmark } from "@/components/brand/MezoWordmark";
 import { useNetwork, type MezoNetwork } from "@/context/NetworkContext";
+import { defaultVaultAddress } from "@/lib/env";
 import { cn } from "@/lib/cn";
 
 export function Navbar() {
@@ -27,6 +28,14 @@ export function Navbar() {
             <Link href="/" className="text-hl-muted transition hover:text-hl-teal">
               Dashboard
             </Link>
+            {defaultVaultAddress && (
+              <Link
+                href={`/vault/${defaultVaultAddress}`}
+                className="text-hl-muted transition hover:text-hl-teal"
+              >
+                Live vault
+              </Link>
+            )}
           </nav>
         </div>
 

@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { Hero } from "@/components/dashboard/Hero";
+import { HowItWorks } from "@/components/dashboard/HowItWorks";
+import { ScopeBanner } from "@/components/dashboard/ScopeBanner";
 import { StatsStrip } from "@/components/dashboard/StatsStrip";
 import { VaultGrid } from "@/components/dashboard/VaultGrid";
 import { Panel } from "@/components/ui/Panel";
@@ -31,12 +33,14 @@ export default function DashboardPage() {
         animate="animate"
         className="mt-6 space-y-6"
       >
+        <ScopeBanner />
         <StatsStrip
           totalTvl={stats.totalTvl}
           activeVaults={stats.activeVaults}
           totalRebalances={stats.totalRebalances}
           isLoading={stats.isLoading || isLoading}
         />
+        <HowItWorks />
 
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <Panel title="Vaults" className="min-h-[280px]">

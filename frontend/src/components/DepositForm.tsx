@@ -8,6 +8,7 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { parseUnits } from "viem";
+import { Toast } from "@/components/ui/Toast";
 import { erc20Abi, mezrangeVaultAbi } from "@/lib/abis";
 import { cn } from "@/lib/cn";
 
@@ -22,6 +23,7 @@ export function DepositForm({ vaultAddress, embedded }: DepositFormProps) {
   const [amount1, setAmount1] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [toast, setToast] = useState<"loading" | "success" | null>(null);
 
   const { data: token0 } = useContractRead({
     address: vaultAddress,
@@ -68,16 +70,18 @@ export function DepositForm({ vaultAddress, embedded }: DepositFormProps) {
   const { isLoading: waitingApprove1 } = useWaitForTransactionReceipt({
     hash: approve1Hash,
   });
-  const { isLoading: waitingDeposit } = useWaitForTransactionReceipt({
+  const { isLoading: waitingDeposit, isSuccess: depositSuccess } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
 
   const busy = waitingApprove0 || waitingApprove1 || waitingDeposit;
+  const toastSucceeded = toast === "loading" && depositSuccess;
 
   async function handleDeposit() {
     if (!address || !token0 || !token1 || !decimals0 || !decimals1) return;
 
     try {
+      setToast("loading");
       setStatus("Approving tokens…");
       const parsed0 = parseUnits(amount0 || "0", Number(decimals0));
       const parsed1 = parseUnits(amount1 || "0", Number(decimals1));
@@ -110,11 +114,19 @@ export function DepositForm({ vaultAddress, embedded }: DepositFormProps) {
       setAmount0("");
       setAmount1("");
     } catch (error) {
+      setToast(null);
       setStatus(error instanceof Error ? error.message : "Deposit failed.");
     }
   }
 
   return (
+    <>
+    <Toast
+      open={toast !== null}
+      variant={toastSucceeded ? "success" : "loading"}
+      message={toastSucceeded ? "Deposit confirmed" : "Processing deposit…"}
+      onClose={() => setToast(null)}
+    />
     <div className={cn(!embedded && "rounded-xl border border-white/5 bg-glass p-6 backdrop-blur-xl")}>
       {!embedded && (
         <>
@@ -176,5 +188,6 @@ export function DepositForm({ vaultAddress, embedded }: DepositFormProps) {
 
       {status && <p className="mt-3 text-xs text-text-muted">{status}</p>}
     </div>
+    </>
   );
 }

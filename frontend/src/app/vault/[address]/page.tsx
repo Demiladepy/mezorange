@@ -12,6 +12,7 @@ import { RebalanceTimeline } from "@/components/vault/RebalanceTimeline";
 import { ActionPanel } from "@/components/vault/ActionPanel";
 import { PerformanceCharts } from "@/components/vault/PerformanceCharts";
 import { KeeperRebalance } from "@/components/vault/KeeperRebalance";
+import { UserPosition } from "@/components/vault/UserPosition";
 import { useClientReady, PageLoader } from "@/hooks/useClientReady";
 
 export default function VaultPage() {
@@ -42,25 +43,25 @@ export default function VaultPage() {
       <MaintenanceBanner vaultAddress={vaultAddress} />
       <VaultHero vaultAddress={vaultAddress} />
 
-      {!isConnected ? (
-        <div className="mt-10">
-          <ConnectPrompt message="Connect your wallet to deposit, withdraw, and command this vault." />
-        </div>
-      ) : (
-        <div className="mt-10 space-y-8">
-          <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-            <div className="space-y-8">
-              <PriceVisualizer vaultAddress={vaultAddress} />
-              <RebalanceTimeline vaultAddress={vaultAddress} />
-            </div>
-            <div className="space-y-6">
-              <ActionPanel vaultAddress={vaultAddress} />
-              <KeeperRebalance vaultAddress={vaultAddress} />
-            </div>
-          </div>
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+        <div className="space-y-8">
+          <PriceVisualizer vaultAddress={vaultAddress} />
+          <RebalanceTimeline vaultAddress={vaultAddress} />
           <PerformanceCharts vaultAddress={vaultAddress} />
         </div>
-      )}
+
+        <div className="space-y-6">
+          {isConnected ? (
+            <>
+              <UserPosition vaultAddress={vaultAddress} />
+              <ActionPanel vaultAddress={vaultAddress} />
+              <KeeperRebalance vaultAddress={vaultAddress} />
+            </>
+          ) : (
+            <ConnectPrompt message="Connect your wallet to deposit, withdraw, and trigger keeper rebalance. Range charts and activity below are live without a wallet." />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
